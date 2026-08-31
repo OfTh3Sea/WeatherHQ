@@ -1,3 +1,4 @@
+<img width="4440" height="2520" alt="weather_hq_poster" src="https://github.com/user-attachments/assets/0115f288-8670-47c2-8a77-5bb68b0e052a" />
 # ⛅ Rowan's Weather HQ
 
 > **An interactive, educational weather reference page built for a 9-year-old weather enthusiast in Kansas City, Missouri.**
