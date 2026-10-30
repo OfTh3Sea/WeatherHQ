@@ -1,0 +1,1006 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rowan's Weather HQ ⛅</title>
+<link href="https://fonts.googleapis.com/css2?family=Boogaloo&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --sky: #0d1b2e;
+  --mid: #1a2f50;
+  --accent: #60c8ff;
+  --gold: #ffd166;
+  --warm: #ff9f43;
+  --danger: #ff6b6b;
+  --green: #51cf66;
+  --purple: #cc5de8;
+  --text: #e8f4ff;
+  --muted: rgba(232,244,255,0.58);
+  --card: rgba(255,255,255,0.055);
+  --border: rgba(255,255,255,0.11);
+  --radius: 14px;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{font-family:'Nunito',sans-serif;background:var(--sky);color:var(--text);min-height:100vh;overflow-x:hidden;}
+h1,h2,h3,h4{font-family:'Boogaloo',cursive;}
+
+/* BG */
+.bg-layer{position:fixed;inset:0;z-index:0;
+  background:radial-gradient(ellipse at 15% 60%,#1a3a6a 0%,transparent 55%),
+             radial-gradient(ellipse at 85% 20%,#2a1060 0%,transparent 55%),
+             var(--sky);}
+.stars{position:fixed;inset:0;z-index:0;overflow:hidden;}
+.star{position:absolute;border-radius:50%;background:#fff;animation:twinkle linear infinite;}
+@keyframes twinkle{0%,100%{opacity:.15;}50%{opacity:.8;}}
+
+/* RAIN */
+.rain-layer{position:fixed;inset:0;pointer-events:none;z-index:1;overflow:hidden;}
+.rdrop{position:absolute;top:-20px;width:1.5px;background:linear-gradient(transparent,rgba(96,200,255,.35));border-radius:2px;animation:rfall linear infinite;}
+@keyframes rfall{to{transform:translateY(110vh) translateX(-25px);}}
+
+/* LIGHTNING */
+.lightning-fx{position:fixed;inset:0;z-index:1;animation:lflash 9s infinite;pointer-events:none;}
+@keyframes lflash{0%,88%,100%{opacity:0;}89%{opacity:.05;}90%{opacity:0;}91%{opacity:.08;}92%{opacity:0;}}
+
+.content{position:relative;z-index:10;max-width:780px;margin:0 auto;padding:0 16px 80px;}
+
+/* HERO */
+.hero{text-align:center;padding:40px 0 30px;border-bottom:1px solid var(--border);margin-bottom:28px;}
+.hero-icons{font-size:2.8rem;margin-bottom:10px;animation:bounce-icons 3s ease-in-out infinite;}
+@keyframes bounce-icons{0%,100%{transform:translateY(0);}50%{transform:translateY(-6px);}}
+.hero h1{font-size:clamp(2.4rem,8vw,3.4rem);color:var(--accent);text-shadow:0 0 30px rgba(96,200,255,.45);line-height:1;}
+.hero .sub{font-size:1rem;color:var(--muted);font-weight:600;margin-top:8px;}
+.badge{display:inline-block;margin-top:10px;padding:5px 16px;border-radius:20px;background:rgba(96,200,255,.1);border:1px solid rgba(96,200,255,.3);font-size:.78rem;font-weight:700;color:var(--accent);letter-spacing:.8px;}
+
+/* TABS */
+.nav{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:28px;}
+.tab{flex:1;min-width:76px;padding:9px 5px;background:var(--card);border:1px solid var(--border);border-radius:11px;color:var(--muted);font-family:'Nunito',sans-serif;font-weight:700;font-size:.75rem;cursor:pointer;text-align:center;transition:all .2s;}
+.tab:hover{background:rgba(255,255,255,.09);color:var(--text);}
+.tab.active{background:rgba(96,200,255,.15);border-color:rgba(96,200,255,.5);color:var(--accent);}
+.tab span{display:block;font-size:1.35rem;margin-bottom:2px;}
+
+/* SECTIONS */
+.section{display:none;animation:fadeup .3s ease;}
+.section.active{display:block;}
+@keyframes fadeup{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+.sec-title{font-size:1.75rem;color:var(--accent);margin-bottom:18px;display:flex;align-items:center;gap:9px;}
+
+/* CARDS */
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:17px;margin-bottom:13px;}
+.card-title{font-family:'Boogaloo',cursive;font-size:1.12rem;color:var(--gold);margin-bottom:6px;display:flex;align-items:center;gap:8px;}
+.card p,.card li{font-size:.91rem;color:var(--muted);line-height:1.68;}
+.hl{color:var(--accent);font-weight:700;}
+.hg{color:var(--gold);font-weight:700;}
+.hw{color:var(--warm);font-weight:700;}
+.hr{color:var(--danger);font-weight:700;}
+
+/* ── WEATHER MIXER ── */
+.mixer-wrap{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:16px;}
+.mixer-title{font-family:'Boogaloo',cursive;font-size:1.5rem;color:var(--gold);margin-bottom:6px;}
+.mixer-sub{font-size:.88rem;color:var(--muted);margin-bottom:18px;}
+.mixer-slots{display:flex;align-items:center;gap:10px;margin-bottom:18px;flex-wrap:wrap;}
+.mix-drop-zone{
+  flex:1;min-width:120px;height:90px;
+  border:2px dashed var(--border);border-radius:12px;
+  display:flex;align-items:center;justify-content:center;
+  flex-direction:column;gap:4px;cursor:pointer;
+  transition:all .2s;font-size:.82rem;color:var(--muted);
+  background:rgba(0,0,0,.15);
+}
+.mix-drop-zone.has-item{border-color:var(--accent);background:rgba(96,200,255,.08);}
+.mix-drop-zone .chosen-icon{font-size:2.4rem;}
+.mix-drop-zone .chosen-label{font-size:.78rem;color:var(--text);font-weight:700;}
+.mix-plus{font-size:2rem;color:var(--muted);}
+.mix-equals{font-size:1.6rem;color:var(--muted);}
+.mix-result-box{
+  flex:1;min-width:120px;height:90px;
+  border-radius:12px;
+  background:rgba(255,209,102,.07);
+  border:1px solid rgba(255,209,102,.25);
+  display:flex;align-items:center;justify-content:center;
+  flex-direction:column;gap:4px;
+}
+.mix-result-box .r-icon{font-size:2.4rem;}
+.mix-result-box .r-name{font-size:.85rem;font-weight:800;color:var(--gold);}
+.mix-result-box .r-empty{font-size:.8rem;color:var(--muted);}
+.mix-result-desc{min-height:48px;font-size:.88rem;color:var(--muted);line-height:1.6;padding:10px 14px;background:rgba(0,0,0,.15);border-radius:10px;margin-bottom:12px;}
+.weather-palette{display:flex;flex-wrap:wrap;gap:7px;}
+.wx-chip{
+  padding:7px 12px;border-radius:50px;
+  background:rgba(255,255,255,.07);border:1px solid var(--border);
+  cursor:pointer;font-size:1.2rem;transition:all .18s;
+  display:flex;align-items:center;gap:5px;
+  font-family:'Nunito',sans-serif;font-weight:700;font-size:.8rem;color:var(--text);
+}
+.wx-chip:hover{background:rgba(96,200,255,.15);border-color:var(--accent);transform:scale(1.06);}
+.wx-chip.selected-1{background:rgba(96,200,255,.2);border-color:var(--accent);}
+.wx-chip.selected-2{background:rgba(255,209,102,.2);border-color:var(--gold);}
+.slot-label{font-size:.72rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px;}
+.mix-btn{
+  display:block;width:100%;padding:12px;border-radius:10px;
+  background:rgba(96,200,255,.18);border:1px solid rgba(96,200,255,.4);
+  color:var(--accent);font-family:'Boogaloo',cursive;font-size:1.2rem;
+  cursor:pointer;transition:all .2s;margin-top:10px;
+}
+.mix-btn:hover{background:rgba(96,200,255,.28);}
+.mix-score{font-size:.8rem;color:var(--muted);text-align:center;margin-top:8px;}
+
+/* ── TEMP CONVERTER ── */
+.converter-wrap{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:16px;}
+.conv-title{font-family:'Boogaloo',cursive;font-size:1.5rem;color:var(--gold);margin-bottom:14px;}
+.conv-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;}
+.conv-box{background:rgba(0,0,0,.2);border:1px solid var(--border);border-radius:12px;padding:16px;text-align:center;}
+.conv-box label{display:block;font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin-bottom:8px;}
+.conv-input{
+  width:100%;background:transparent;border:none;outline:none;
+  font-family:'Boogaloo',cursive;font-size:2.6rem;color:var(--text);
+  text-align:center;
+}
+.conv-unit{font-size:.9rem;color:var(--muted);margin-top:2px;}
+.conv-bar{height:22px;border-radius:10px;margin-bottom:8px;background:linear-gradient(to right,#3a8fff,#60c8ff,#51cf66,#ffd166,#ff9f43,#ff6b6b);position:relative;overflow:visible;}
+.conv-pointer{position:absolute;top:-6px;width:10px;height:34px;background:#fff;border-radius:3px;transform:translateX(-50%);box-shadow:0 0 10px rgba(255,255,255,.5);transition:left .4s cubic-bezier(.34,1.56,.64,1);}
+.conv-scale{display:flex;justify-content:space-between;font-size:.7rem;color:var(--muted);}
+.conv-fun{min-height:36px;font-size:.88rem;color:var(--gold);text-align:center;font-weight:700;padding:8px;background:rgba(255,209,102,.07);border-radius:9px;margin-top:10px;}
+
+/* ── PAINT SECTION ── */
+.paint-wrap{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:16px;}
+.paint-title{font-family:'Boogaloo',cursive;font-size:1.5rem;color:var(--gold);margin-bottom:12px;}
+.paint-toolbar{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:10px;}
+.stamp-picker{display:flex;flex-wrap:wrap;gap:5px;flex:1;}
+.stamp-btn{
+  font-size:1.5rem;width:42px;height:42px;border-radius:9px;
+  background:rgba(255,255,255,.06);border:1px solid var(--border);
+  cursor:pointer;display:flex;align-items:center;justify-content:center;
+  transition:all .15s;
+}
+.stamp-btn:hover{background:rgba(96,200,255,.15);transform:scale(1.1);}
+.stamp-btn.active{background:rgba(96,200,255,.22);border-color:var(--accent);}
+.paint-tools{display:flex;gap:5px;margin-left:auto;}
+.tool-btn{
+  padding:8px 12px;border-radius:9px;background:rgba(255,255,255,.07);
+  border:1px solid var(--border);color:var(--text);
+  font-family:'Nunito',sans-serif;font-weight:700;font-size:.78rem;
+  cursor:pointer;transition:all .18s;
+}
+.tool-btn:hover{background:rgba(255,107,107,.2);border-color:var(--danger);}
+.paint-size{display:flex;gap:5px;align-items:center;}
+.sz-btn{width:34px;height:34px;border-radius:8px;background:rgba(255,255,255,.07);border:1px solid var(--border);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:700;color:var(--muted);transition:all .15s;}
+.sz-btn.active,.sz-btn:hover{background:rgba(255,209,102,.2);border-color:var(--gold);color:var(--gold);}
+.paint-canvas{
+  width:100%;height:320px;
+  background:linear-gradient(180deg,#0d2a4a 0%,#1a4a6a 60%,#2a5a3a 100%);
+  border-radius:12px;border:1px solid var(--border);
+  cursor:crosshair;position:relative;overflow:hidden;
+  user-select:none;-webkit-user-select:none;
+}
+.paint-stamp{position:absolute;pointer-events:none;transform:translate(-50%,-50%);animation:stamp-pop .2s cubic-bezier(.34,1.56,.64,1);}
+@keyframes stamp-pop{from{transform:translate(-50%,-50%) scale(0);}to{transform:translate(-50%,-50%) scale(1);}}
+.paint-hint{font-size:.78rem;color:var(--muted);text-align:center;margin-top:7px;}
+.size-preview{font-size:1rem;transition:font-size .15s;}
+
+/* ── TYPES (weather types grid) ── */
+.wtypes-grid{display:grid;grid-template-columns:1fr 1fr;gap:11px;}
+.wtype-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;cursor:pointer;transition:all .2s;}
+.wtype-card:hover{background:rgba(255,255,255,.09);}
+.wtype-card.open{border-color:rgba(96,200,255,.4);}
+.wtype-icon{font-size:2rem;margin-bottom:7px;display:block;}
+.wtype-name{font-family:'Boogaloo',cursive;font-size:1.1rem;color:var(--gold);margin-bottom:4px;}
+.wtype-short{font-size:.83rem;color:var(--muted);line-height:1.55;}
+.wtype-more{display:none;margin-top:9px;padding-top:9px;border-top:1px solid var(--border);font-size:.83rem;color:var(--muted);line-height:1.6;}
+.wtype-card.open .wtype-more{display:block;}
+
+/* ── RECORDS ── */
+.rec-list{display:flex;flex-direction:column;gap:11px;}
+.rec-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:15px 17px;display:flex;gap:14px;align-items:flex-start;}
+.rec-medal{font-size:2rem;min-width:42px;text-align:center;margin-top:2px;}
+.rec-info h3{font-family:'Boogaloo',cursive;font-size:1.05rem;color:var(--gold);margin-bottom:4px;}
+.rec-info p{font-size:.87rem;color:var(--muted);line-height:1.55;}
+.rec-category{display:inline-block;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.6px;padding:2px 8px;border-radius:20px;margin-bottom:5px;}
+.cat-wind{background:rgba(96,200,255,.15);color:var(--accent);}
+.cat-heat{background:rgba(255,107,107,.15);color:var(--danger);}
+.cat-cold{background:rgba(100,180,255,.15);color:#90caf9;}
+.cat-rain{background:rgba(81,207,102,.15);color:var(--green);}
+.cat-snow{background:rgba(200,230,255,.12);color:#c8e6ff;}
+.cat-storm{background:rgba(204,93,232,.15);color:var(--purple);}
+.cat-weird{background:rgba(255,159,67,.15);color:var(--warm);}
+
+/* ── SCIENCE ── */
+.steps{display:flex;flex-direction:column;gap:0;position:relative;}
+.steps::before{content:'';position:absolute;left:22px;top:0;bottom:0;width:2px;background:linear-gradient(to bottom,var(--accent),var(--gold),var(--warm),var(--danger));z-index:0;}
+.step{display:flex;gap:14px;align-items:flex-start;padding:14px 0;position:relative;z-index:1;}
+.step-num{width:44px;height:44px;min-width:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Boogaloo',cursive;font-size:1.3rem;background:var(--sky);border:2px solid var(--accent);}
+.step-body h3{font-family:'Boogaloo',cursive;font-size:1rem;color:var(--text);margin-bottom:4px;}
+.step-body p{font-size:.89rem;color:var(--muted);line-height:1.62;}
+
+/* ── GLOSSARY ── */
+.glos-item{border-radius:10px;overflow:hidden;border:1px solid var(--border);margin-bottom:6px;}
+.glos-q{padding:12px 16px;background:var(--card);cursor:pointer;display:flex;justify-content:space-between;align-items:center;font-weight:700;font-size:.92rem;}
+.glos-q:hover{background:rgba(255,255,255,.08);}
+.glos-arrow{color:var(--muted);transition:transform .2s;font-size:.8rem;}
+.glos-item.open .glos-arrow{transform:rotate(180deg);}
+.glos-a{display:none;padding:10px 16px 14px;background:rgba(0,0,0,.2);font-size:.87rem;color:var(--muted);line-height:1.65;}
+.glos-item.open .glos-a{display:block;}
+
+/* ── WOW FACTS ── */
+.wow-grid{display:flex;flex-direction:column;gap:10px;}
+.wow-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 16px;display:flex;gap:13px;cursor:pointer;transition:all .2s;}
+.wow-card:hover{background:rgba(255,255,255,.08);}
+.wow-icon{font-size:1.8rem;min-width:36px;text-align:center;}
+.wow-body{}
+.wow-title{font-family:'Boogaloo',cursive;font-size:1rem;color:var(--gold);margin-bottom:3px;}
+.wow-teaser{font-size:.87rem;color:var(--muted);line-height:1.58;}
+.wow-secret{display:none;margin-top:9px;padding:9px 11px;background:rgba(255,209,102,.08);border-left:3px solid rgba(255,209,102,.4);border-radius:8px;font-size:.84rem;color:rgba(255,209,102,.9);line-height:1.6;}
+.wow-card.open .wow-secret{display:block;}
+.wow-hint{font-size:.72rem;color:rgba(255,255,255,.25);margin-top:3px;font-style:italic;}
+.wow-card.open .wow-hint{display:none;}
+
+/* ── SAFETY ── */
+.safety-grid{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-bottom:14px;}
+.sw-box{border-radius:12px;padding:16px;}
+.sw-watch{background:rgba(255,159,67,.12);border:1px solid rgba(255,159,67,.35);}
+.sw-warning{background:rgba(255,107,107,.14);border:1px solid rgba(255,107,107,.4);}
+.sw-box .sw-emoji{font-size:2rem;display:block;margin-bottom:7px;}
+.sw-box h3{font-family:'Boogaloo',cursive;font-size:1.1rem;margin-bottom:6px;}
+.sw-watch h3{color:var(--warm);}
+.sw-warning h3{color:var(--danger);}
+.sw-box p{font-size:.83rem;color:var(--muted);line-height:1.55;}
+.safety-block{border-radius:12px;padding:16px;margin-bottom:11px;}
+.safety-do{background:rgba(81,207,102,.1);border:1px solid rgba(81,207,102,.3);}
+.safety-dont{background:rgba(255,107,107,.1);border:1px solid rgba(255,107,107,.3);}
+.safety-hdr{font-family:'Boogaloo',cursive;font-size:1.2rem;margin-bottom:10px;}
+.safety-do .safety-hdr{color:var(--green);}
+.safety-dont .safety-hdr{color:var(--danger);}
+.safety-list{list-style:none;display:flex;flex-direction:column;gap:7px;}
+.safety-list li{font-size:.89rem;color:var(--muted);display:flex;gap:8px;line-height:1.52;}
+
+/* responsive */
+@media(max-width:520px){
+  .wtypes-grid{grid-template-columns:1fr;}
+  .safety-grid{grid-template-columns:1fr;}
+  .conv-grid{grid-template-columns:1fr 1fr;}
+  .tab{min-width:66px;font-size:.7rem;}
+  .conv-input{font-size:2rem;}
+  .mixer-slots{flex-direction:column;align-items:stretch;}
+  .mix-drop-zone,.mix-result-box{min-width:unset;}
+  .mix-plus,.mix-equals{text-align:center;}
+}
+</style>
+</head>
+<body>
+<div class="bg-layer"></div>
+<div class="lightning-fx"></div>
+<div class="stars" id="stars"></div>
+<div class="rain-layer" id="rain"></div>
+
+<div class="content">
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-icons">⛅🌡️🌧️❄️🌪️🌈</div>
+  <h1>Rowan's Weather HQ</h1>
+  <p class="sub">Your ultimate guide to everything happening in the sky above</p>
+  <span class="badge">📍 Kansas City, MO — Where Every Kind of Weather Happens!</span>
+</div>
+
+<!-- NAV TABS -->
+<div class="nav">
+  <button class="tab active" onclick="showTab('types',this)"><span>🌤️</span>Weather Types</button>
+  <button class="tab" onclick="showTab('mixer',this)"><span>🧪</span>Weather Mixer</button>
+  <button class="tab" onclick="showTab('temp',this)"><span>🌡️</span>Temp Tool</button>
+  <button class="tab" onclick="showTab('paint',this)"><span>🎨</span>Sky Painter</button>
+  <button class="tab" onclick="showTab('science',this)"><span>🔬</span>How It Works</button>
+  <button class="tab" onclick="showTab('records',this)"><span>🏆</span>Records</button>
+  <button class="tab" onclick="showTab('wow',this)"><span>🤯</span>Wow Facts</button>
+  <button class="tab" onclick="showTab('words',this)"><span>📖</span>Word Bank</button>
+  <button class="tab" onclick="showTab('safety',this)"><span>🏠</span>Stay Safe</button>
+</div>
+
+<!-- ============================
+     SECTION: WEATHER TYPES
+============================= -->
+<div id="sec-types" class="section active">
+  <div class="sec-title">🌤️ Types of Weather</div>
+  <p style="font-size:.9rem;color:var(--muted);margin-bottom:16px;">Tap any card to learn more about that type of weather! ☁️</p>
+  <div class="wtypes-grid">
+    <div class="wtype-card" onclick="this.classList.toggle('open')">
+      <span class="wtype-icon">☀️</span>
+      <div class="wtype-name">Sunny / Clear</div>
+      <div class="wtype-short">No clouds blocking sunlight. Great for playing outside!</div>
+      <div class="wtype-more">Sunny weather happens when high pressure systems push away clouds. The sun heats the ground, which warms the air above it. In Kansas City, summer sunny days can hit 100°F! The sun is 93 million miles away, but its energy still heats our whole planet. ☀️</div>
+    </div>
+    <div class="wtype-card" onclick="this.classList.toggle('open')">
+      <span class="wtype-icon">🌧️</span>
+      <div class="wtype-name">Rain</div>
+      <div class="wtype-short">Water droplets fall from clouds when they get too heavy.</div>
+      <div class="wtype-more">Rain forms when tiny water droplets in clouds combine and grow until they're too heavy to float. A raindrop falls at about 14 mph. The smell of rain on dry ground is called <strong style="color:var(--accent)">petrichor</strong> — caused by a chemical called geosmin released from the soil. Kansas City gets about 38 inches of rain per year! 🌧️</div>
+    </div>
+    <div class="wtype-card" onclick="this.classList.toggle('open')">
+      <span class="wtype-icon">❄️</span>
+      <div class="wtype-name">Snow</div>
+      <div class="wtype-short">Ice crystals fall from clouds — every snowflake is unique!</div>
+      <div class="wtype-more">Snow forms when water vapor freezes directly into ice crystals in very cold clouds (below 32°F). Each snowflake is a unique hexagonal (6-sided) crystal. No two are exactly alike — scientists have proven it! Kansas City averages about 15 inches of snow per year, mostly January through March. ❄️</div>
+    </div>
+    <div class="wtype-card" onclick="this.classList.toggle('open')">
+      <span class="wtype-icon">⛈️</span>
+      <div class="wtype-name">Thunderstorm</div>
+      <div class="wtype-short">Lightning, thunder, heavy rain, and strong winds all at once!</div>
+      <div class="wtype-more">Thunderstorms need three things: moisture, rising warm air, and something to lift that air (like a cold front). Lightning is a giant spark of electricity — hotter than the surface of the sun! Thunder is the sound of air rapidly expanding from that heat. Light travels faster than sound, so you see lightning before you hear thunder. Count the seconds between flash and thunder and divide by 5 for miles away! ⚡</div>
+    </div>
+    <div class="wtype-card" onclick="this.classList.toggle('open')">
+      <span class="wtype-icon">🌨️</span>
+      <div class="wtype-name">Sleet</div>
+      <div class="wtype-short">Rain that refreezes into tiny ice pellets before hitting the ground.</div>
+      <div class="wtype-more">Sleet forms when rain falls through a layer of freezing air near the ground and turns back into ice before landing. It's different from freezing rain, which stays liquid and freezes ON the ground (creating dangerous ice). Sleet makes a tapping sound on windows and can make roads very slippery. 🌨️</div>
+    </div>
+    <div class="wtype-card" onclick="this.classList.toggle('open')">
+      <span class="wtype-icon">🌫️</span>
+      <div class="wtype-name">Fog</div>
+      <div class="wtype-short">A cloud that forms right at ground level — like walking through a cloud!</div>
+      <div class="wtype-more">Fog is essentially a low cloud touching the ground. It forms when moist air near the surface cools enough for water vapor to condense into tiny droplets. Dense fog can reduce visibility to near zero! Fog is measured in visibility — "pea soup fog" means you can't see more than 1/4 mile. Kansas City often gets morning fog along the Missouri River. 🌫️</div>
+    </div>
+    <div class="wtype-card" onclick="this.classList.toggle('open')">
+      <span class="wtype-icon">🌩️</span>
+      <div class="wtype-name">Hail</div>
+      <div class="wtype-short">Balls of ice that fall from powerful thunderstorms — sometimes huge!</div>
+      <div class="wtype-more">Hail forms inside powerful thunderstorms with strong updrafts. A hailstone starts as a small ice pellet that gets carried up and down repeatedly inside the storm — each trip adds another layer of ice. You can count the rings of a hailstone like tree rings! The largest hailstone ever found in the US fell in Vivian, South Dakota in 2010 — it was 8 inches wide! 🧊</div>
+    </div>
+    <div class="wtype-card" onclick="this.classList.toggle('open')">
+      <span class="wtype-icon">💨</span>
+      <div class="wtype-name">Wind</div>
+      <div class="wtype-short">Moving air caused by differences in air pressure across the atmosphere.</div>
+      <div class="wtype-more">Wind is simply air moving from areas of high pressure to areas of low pressure. The bigger the difference, the stronger the wind! Wind is measured using the Beaufort Scale (0–12). Wind names depend on the direction they come FROM: a north wind blows FROM the north. The jet stream is a river of fast-moving air miles above us that steers our weather systems! 💨</div>
+    </div>
+    <div class="wtype-card" onclick="this.classList.toggle('open')">
+      <span class="wtype-icon">🌈</span>
+      <div class="wtype-name">Rainbow</div>
+      <div class="wtype-short">Sunlight split into colors by raindrops — pure magic science!</div>
+      <div class="wtype-more">Rainbows form when sunlight enters a raindrop, bounces off the back, and exits — splitting into all its colors because each color bends at a slightly different angle. You always see a rainbow opposite the sun (sun behind you, rain in front). Double rainbows happen when light bounces TWICE inside the drop — the second arc has the colors reversed! 🌈</div>
+    </div>
+    <div class="wtype-card" onclick="this.classList.toggle('open')">
+      <span class="wtype-icon">🌡️</span>
+      <div class="wtype-name">Heat Wave</div>
+      <div class="wtype-short">Dangerously hot weather that lasts several days in a row.</div>
+      <div class="wtype-more">A heat wave is declared when temperatures are significantly above normal for at least 3 days in a row. Heat waves actually kill more people in the US each year than any other weather event — more than hurricanes, tornadoes, or floods! The "heat index" (feels-like temperature) combines heat and humidity. Kansas City hit a heat index of 115°F in the summer of 2012! 🥵</div>
+    </div>
+    <div class="wtype-card" onclick="this.classList.toggle('open')">
+      <span class="wtype-icon">🌀</span>
+      <div class="wtype-name">Hurricane</div>
+      <div class="wtype-short">A massive rotating tropical storm with winds over 74 mph.</div>
+      <div class="wtype-more">Hurricanes form over warm ocean water (at least 79°F) when warm moist air rises and cold air rushes in to replace it, creating a giant spinning storm. They can be 300–500 miles wide! The center (called the "eye") is eerily calm and clear. By the time they reach Kansas City they've weakened, but can still bring heavy rain and strong winds. 🌀</div>
+    </div>
+    <div class="wtype-card" onclick="this.classList.toggle('open')">
+      <span class="wtype-icon">🌁</span>
+      <div class="wtype-name">Blizzard</div>
+      <div class="wtype-short">A severe snowstorm with heavy snow, strong winds, and very low visibility.</div>
+      <div class="wtype-more">A blizzard officially requires winds of at least 35 mph, heavy snow, and visibility less than 1/4 mile — all for at least 3 hours. The wind drives the snow sideways, making it feel much colder (wind chill). The Blizzard of 1978 is still one of the most famous in US history. Kansas City has had some memorable blizzards, especially in 1979 and 2011! 🌁</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================
+     SECTION: WEATHER MIXER
+============================= -->
+<div id="sec-mixer" class="section">
+  <div class="sec-title">🧪 Weather Mixer Lab</div>
+  <div class="mixer-wrap">
+    <div class="mixer-title">⚗️ Mix Two Weathers Together!</div>
+    <div class="mixer-sub">Pick two weather types from the palette below, then hit MIX to see what they make! There are lots of combinations to discover. 🔬</div>
+
+    <div style="display:flex;gap:10px;margin-bottom:10px;flex-wrap:wrap;">
+      <div style="flex:1;min-width:120px;">
+        <div class="slot-label" style="margin-bottom:5px;">Weather #1 (tap to pick)</div>
+        <div class="mix-drop-zone" id="slot1" onclick="activateSlot(1)">
+          <span id="slot1-icon" style="font-size:2.4rem;">❔</span>
+          <span id="slot1-label" style="font-size:.78rem;color:var(--muted);">tap palette</span>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;padding-top:24px;font-size:2rem;color:var(--muted);">+</div>
+      <div style="flex:1;min-width:120px;">
+        <div class="slot-label" style="margin-bottom:5px;">Weather #2 (tap to pick)</div>
+        <div class="mix-drop-zone" id="slot2" onclick="activateSlot(2)">
+          <span id="slot2-icon" style="font-size:2.4rem;">❔</span>
+          <span id="slot2-label" style="font-size:.78rem;color:var(--muted);">tap palette</span>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;padding-top:24px;font-size:2rem;color:var(--muted);">=</div>
+      <div style="flex:1;min-width:120px;">
+        <div class="slot-label" style="margin-bottom:5px;">Result</div>
+        <div class="mix-result-box" id="mix-result-box">
+          <span class="r-empty" id="mix-r-icon">🤔</span>
+          <span class="r-name" id="mix-r-name" style="display:none;font-size:.85rem;font-weight:800;color:var(--gold);"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="mix-result-desc" id="mix-desc">Pick two weather types and tap MIX to see what they create together!</div>
+
+    <div style="font-size:.8rem;color:var(--muted);margin-bottom:10px;">🎯 <strong style="color:var(--text);">Active slot: <span id="active-slot-label">Weather #1</span></strong> — tap a weather chip below to select it</div>
+    <div class="weather-palette" id="mixer-palette"></div>
+    <button class="mix-btn" onclick="doMix()">⚗️ MIX IT!</button>
+    <div class="mix-score" id="mix-score">Combinations found: <span id="found-count">0</span> / <span id="total-count">0</span></div>
+  </div>
+  <div class="card">
+    <div class="card-title">💡 What is a mix?</div>
+    <p>In real meteorology, weather types often combine or cause each other! Sleet really does form from rain + freezing air. A thundersnow really is a snowstorm + thunderstorm. Scientists who study weather (<strong class="hl">meteorologists</strong>) have to think about how all these ingredients interact. You're thinking like a real scientist! 🔬</p>
+  </div>
+</div>
+
+<!-- ============================
+     SECTION: TEMP CONVERTER
+============================= -->
+<div id="sec-temp" class="section">
+  <div class="sec-title">🌡️ Temperature Tool</div>
+  <div class="converter-wrap">
+    <div class="conv-title">🌡️ Fahrenheit ↔ Celsius Converter</div>
+    <div class="conv-grid">
+      <div class="conv-box">
+        <label>Fahrenheit (°F)</label>
+        <input class="conv-input" id="fahr" type="number" value="72" oninput="convFromF()" placeholder="°F">
+        <div class="conv-unit">Used in the USA 🇺🇸</div>
+      </div>
+      <div class="conv-box">
+        <label>Celsius (°C)</label>
+        <input class="conv-input" id="cels" type="number" value="22" oninput="convFromC()" placeholder="°C">
+        <div class="conv-unit">Used almost everywhere else 🌍</div>
+      </div>
+    </div>
+    <div class="conv-bar"><div class="conv-pointer" id="conv-pointer"></div></div>
+    <div class="conv-scale">
+      <span>-40° / -40°</span><span>32°F / 0°C</span><span>98.6°F / 37°C</span><span>212°F / 100°C</span>
+    </div>
+    <div class="conv-fun" id="conv-fun">That's a comfortable room temperature! 😊</div>
+  </div>
+  <div class="card">
+    <div class="card-title">📐 The Magic Formulas</div>
+    <p style="margin-bottom:10px;">To convert <strong class="hl">Fahrenheit → Celsius</strong>: subtract 32, then multiply by 5/9<br>
+    Example: 100°F − 32 = 68 × 5/9 = <strong class="hg">37.8°C</strong></p>
+    <p>To convert <strong class="hl">Celsius → Fahrenheit</strong>: multiply by 9/5, then add 32<br>
+    Example: 30°C × 9/5 = 54 + 32 = <strong class="hg">86°F</strong></p>
+  </div>
+  <div class="card">
+    <div class="card-title">🌡️ Key Temperatures to Know</div>
+    <p>
+      <strong class="hr">212°F / 100°C</strong> — Water boils<br>
+      <strong class="hw">98.6°F / 37°C</strong> — Normal human body temperature<br>
+      <strong class="hg">72°F / 22°C</strong> — Perfect comfortable room temperature<br>
+      <strong class="hl">32°F / 0°C</strong> — Water freezes / snow can fall<br>
+      <strong style="color:#90caf9;font-weight:700;">-40°F / -40°C</strong> — The one temperature that's the SAME in both! 🤯<br>
+      <strong style="color:#60a0ff;font-weight:700;">-459.67°F / -273.15°C</strong> — Absolute zero: the coldest anything can possibly be!
+    </p>
+  </div>
+  <div class="card">
+    <div class="card-title">🌬️ Wind Chill & Heat Index</div>
+    <p>Temperature isn't the whole story! <strong class="hl">Wind chill</strong> is how cold it <em>feels</em> when wind blows — at 20°F with 30 mph wind, it feels like -2°F! The <strong class="hg">heat index</strong> (feels-like temperature) adds humidity — at 95°F with 80% humidity, it feels like 133°F! That's why meteorologists always say "feels like..." on hot or cold days.</p>
+  </div>
+</div>
+
+<!-- ============================
+     SECTION: PAINT
+============================= -->
+<div id="sec-paint" class="section">
+  <div class="sec-title">🎨 Sky Painter</div>
+  <div class="paint-wrap">
+    <div class="paint-title">🖌️ Make Your Own Weather Scene!</div>
+    <div class="paint-toolbar">
+      <div class="stamp-picker" id="stamp-picker"></div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap;">
+      <div class="paint-size">
+        <span style="font-size:.75rem;color:var(--muted);font-weight:700;margin-right:4px;">Size:</span>
+        <button class="sz-btn" onclick="setSize(1,this)">S</button>
+        <button class="sz-btn active" onclick="setSize(2,this)">M</button>
+        <button class="sz-btn" onclick="setSize(3,this)">L</button>
+        <button class="sz-btn" onclick="setSize(4,this)">XL</button>
+      </div>
+      <button class="tool-btn" onclick="clearCanvas()" style="margin-left:auto;">🗑️ Clear</button>
+    </div>
+    <div class="paint-canvas" id="paint-canvas"></div>
+    <div class="paint-hint">Tap or click to stamp weather emojis on the canvas! Create your own weather scene. ⛅</div>
+  </div>
+</div>
+
+<!-- ============================
+     SECTION: HOW IT WORKS
+============================= -->
+<div id="sec-science" class="section">
+  <div class="sec-title">🔬 How Weather Works</div>
+  <div class="card">
+    <div class="card-title">🌍 The Big Picture</div>
+    <p>All weather on Earth is powered by just two things: <strong class="hl">energy from the sun</strong> and <strong class="hl">water moving through the atmosphere</strong>. The sun heats the Earth unevenly — the equator gets more heat than the poles — and all our weather is basically the atmosphere trying to balance that out by moving warm and cold air around!</p>
+  </div>
+  <div class="sec-title" style="font-size:1.3rem;margin-top:20px;margin-bottom:14px;">☁️ The Water Cycle</div>
+  <div class="steps">
+    <div class="step"><div class="step-num">1</div><div class="step-body"><h3>Evaporation</h3><p>The sun heats water in oceans, lakes, and rivers, turning it from liquid into invisible water vapor that rises into the air. Every day, the sun evaporates trillions of gallons of water! Kansas City's Missouri River contributes lots of moisture to local weather.</p></div></div>
+    <div class="step"><div class="step-num">2</div><div class="step-body"><h3>Condensation</h3><p>As water vapor rises, it cools down. Cool air can't hold as much moisture as warm air, so the vapor condenses back into tiny liquid water droplets around tiny particles like dust or pollen. These droplets form clouds!</p></div></div>
+    <div class="step"><div class="step-num">3</div><div class="step-body"><h3>Precipitation</h3><p>When cloud droplets combine and grow too heavy to float, they fall as precipitation — rain, snow, sleet, or hail depending on the temperature. Rain is liquid, snow is ice crystals, sleet is refrozen rain, hail is layered ice from thunderstorms.</p></div></div>
+    <div class="step"><div class="step-num">4</div><div class="step-body"><h3>Collection & Runoff</h3><p>Precipitation collects in oceans, lakes, rivers, and groundwater. Some soaks into the ground, some flows into streams and rivers (runoff), and some is taken up by plants and trees. Then the whole cycle starts over again!</p></div></div>
+    <div class="step"><div class="step-num">5</div><div class="step-body"><h3>Transpiration</h3><p>Plants release water vapor through their leaves — this is called transpiration. Forests act like giant humidifiers! Combined with evaporation, this is called evapotranspiration. A large oak tree can release 40,000 gallons of water vapor into the air every year. 🌳</p></div></div>
+  </div>
+  <div class="card" style="margin-top:16px;">
+    <div class="card-title">🌡️ Air Pressure & Fronts</div>
+    <p><strong class="hl">High pressure</strong> = air sinking = clear, calm, sunny weather. <strong class="hl">Low pressure</strong> = air rising = clouds, rain, and storms. A <strong class="hg">cold front</strong> is where cold air pushes under warm air — it brings storms and then clears up. A <strong class="hw">warm front</strong> is where warm air slides over cold air — it brings slow, steady rain. When you see a weather map with "H" and "L" symbols — now you know what they mean! 🗺️</p>
+  </div>
+  <div class="card">
+    <div class="card-title">📡 How Meteorologists Predict Weather</div>
+    <p>Weather forecasting uses <strong class="hl">Doppler radar</strong> (detects rain, snow, and wind), <strong class="hl">weather satellites</strong> (see clouds from space), <strong class="hl">weather balloons</strong> (measure conditions miles up), <strong class="hl">weather stations</strong> (ground readings everywhere), and <strong class="hl">supercomputers</strong> that run complex models. Modern 5-day forecasts are about as accurate as 1-day forecasts were in the 1980s — technology has gotten incredible!</p>
+  </div>
+</div>
+
+<!-- ============================
+     SECTION: RECORDS
+============================= -->
+<div id="sec-records" class="section">
+  <div class="sec-title">🏆 World Weather Records</div>
+  <div class="rec-list">
+    <div class="rec-card"><div class="rec-medal">🔥</div><div class="rec-info"><span class="rec-category cat-heat">Hottest</span><h3>Hottest Temperature Ever Recorded — Furnace Creek, Death Valley, CA (1913)</h3><p><strong style="color:var(--danger);">134°F (56.7°C)</strong> on July 10, 1913. Death Valley is the hottest, driest, lowest place in North America. Ground temperatures can reach 200°F — hot enough to fry an egg! Daytime temperatures above 120°F are common in summer.</p></div></div>
+    <div class="rec-card"><div class="rec-medal">🥶</div><div class="rec-info"><span class="rec-category cat-cold">Coldest</span><h3>Coldest Temperature Ever Recorded — Vostok Station, Antarctica (1983)</h3><p><strong style="color:#90caf9;">-128.6°F (-89.2°C)</strong> on July 21, 1983. That's so cold that exposed skin would freeze in seconds and fuel lines solidify. Scientists at Vostok can't fly in or out for months during winter. The coldest recorded temperature in the US was -80°F in Alaska.</p></div></div>
+    <div class="rec-card"><div class="rec-medal">💨</div><div class="rec-info"><span class="rec-category cat-wind">Windiest</span><h3>Highest Wind Speed Ever — Barrow Island, Australia (1996)</h3><p><strong style="color:var(--accent);">253 mph (408 km/h)</strong> during Tropical Cyclone Olivia. For comparison, an EF5 tornado needs only 200+ mph winds! The windiest city in the US is Dodge City, Kansas — which is about 5 hours west of Kansas City.</p></div></div>
+    <div class="rec-card"><div class="rec-medal">🌧️</div><div class="rec-info"><span class="rec-category cat-rain">Rainiest</span><h3>Wettest Place on Earth — Mawsynram, India</h3><p>Averages <strong style="color:var(--green);">467 inches (11,871 mm)</strong> of rain per year — that's nearly 39 FEET of rain! Clouds from the Bay of Bengal slam into the Khasi Hills and are forced upward, dumping unbelievable amounts of rain. Kansas City gets about 38 inches per year — Mawsynram gets 12 times more!</p></div></div>
+    <div class="rec-card"><div class="rec-medal">☀️</div><div class="rec-info"><span class="rec-category cat-heat">Sunniest</span><h3>Driest Place on Earth — Atacama Desert, Chile</h3><p>Some parts of the Atacama Desert haven't seen rain in recorded history. It's so dry that NASA uses it to test Mars rovers! The desert exists because cold ocean currents on one side and the Andes mountains on the other prevent moisture from ever reaching it.</p></div></div>
+    <div class="rec-card"><div class="rec-medal">🧊</div><div class="rec-info"><span class="rec-category cat-snow">Snowiest</span><h3>Most Snow in One Season — Mount Baker, Washington (1998–99)</h3><p><strong style="color:#c8e6ff;">1,140 inches (95 feet!)</strong> of snow in a single season. That's almost 10 stories of snow. The snowiest city in the US is Flagstaff, Arizona — which gets about 100 inches per year. Heavy lake-effect snowstorms near Lake Erie and Lake Ontario can dump 5–6 feet overnight!</p></div></div>
+    <div class="rec-card"><div class="rec-medal">⚡</div><div class="rec-info"><span class="rec-category cat-storm">Stormiest</span><h3>Most Lightning Strikes — Lake Maracaibo, Venezuela</h3><p>Lightning flashes here <strong style="color:var(--gold);">up to 280 nights per year</strong> for an average of 9 hours per night — sometimes 28 lightning bolts per minute! It's called "Catatumbo Lightning" and has been used as a navigational landmark for centuries. Locals call it the "Lighthouse of Maracaibo."</p></div></div>
+    <div class="rec-card"><div class="rec-medal">🌊</div><div class="rec-info"><span class="rec-category cat-storm">Storm Surge</span><h3>Deadliest Weather Event in US History — Galveston Hurricane (1900)</h3><p>A Category 4 hurricane slammed Galveston, Texas with a storm surge of 15 feet, killing between <strong style="color:var(--danger);">6,000–12,000 people</strong>. There was no warning system at the time. This disaster led to the creation of the National Hurricane Center. After the storm, the city built a 17-foot seawall.</p></div></div>
+    <div class="rec-card"><div class="rec-medal">🌨️</div><div class="rec-info"><span class="rec-category cat-weird">Weirdest</span><h3>Largest Hailstone Ever — Vivian, South Dakota (2010)</h3><p>A hailstone <strong style="color:#c8e6ff;">8 inches wide and 1.9 pounds</strong> fell during a severe thunderstorm. That's bigger than a softball — closer to the size of a small bowling ball! Hail of this size falls at over 100 mph and can punch through car roofs and shatter windows instantly.</p></div></div>
+    <div class="rec-card"><div class="rec-medal">🌡️</div><div class="rec-info"><span class="rec-category cat-weird">Weirdest</span><h3>Biggest Temperature Swing in 24 Hours — Browning, Montana (1916)</h3><p>Temperature dropped <strong style="color:var(--accent);">100°F in a single day</strong> — from 44°F to -56°F! This was caused by an Arctic air mass rapidly replacing warm air. Kansas City has had swings of 50–60°F in a single day during spring cold fronts. Wild weather is part of living in the middle of the country!</p></div></div>
+  </div>
+</div>
+
+<!-- ============================
+     SECTION: WOW FACTS
+============================= -->
+<div id="sec-wow" class="section">
+  <div class="sec-title">🤯 Mind-Blowing Weather Facts</div>
+  <p style="font-size:.9rem;color:var(--muted);margin-bottom:16px;">Tap any card to unlock the hidden bonus details! 👇</p>
+  <div class="wow-grid">
+    <div class="wow-card" onclick="this.classList.toggle('open')">
+      <div class="wow-icon">⚡</div>
+      <div class="wow-body">
+        <div class="wow-title">Lightning strikes Earth 100 times every single second</div>
+        <div class="wow-teaser">That's 8 million lightning bolts per day — all happening at once around the world.</div>
+        <div class="wow-hint">👆 Tap for the full story</div>
+        <div class="wow-secret">At any given moment, there are about 2,000 thunderstorms happening on Earth simultaneously. Each bolt is about 5 miles long, 1 inch wide, hotter than the sun's surface (54,000°F!), and happens in about 1/1000th of a second. Over your lifetime, you have about a 1 in 15,000 chance of being struck — but the odds go way up if you're outside in a storm! ⚡</div>
+      </div>
+    </div>
+    <div class="wow-card" onclick="this.classList.toggle('open')">
+      <div class="wow-icon">🌧️</div>
+      <div class="wow-body">
+        <div class="wow-title">A single cloud can weigh over a million pounds</div>
+        <div class="wow-teaser">Clouds look light and fluffy — but they're surprisingly heavy.</div>
+        <div class="wow-hint">👆 Tap for the full story</div>
+        <div class="wow-secret">A typical cumulus cloud contains about 500 metric tons (over 1 million pounds) of water droplets! It floats because the droplets are so tiny and spread out that the density is less than the surrounding air — like how a very large but very light piece of foam floats. A cumulonimbus (thunderstorm) cloud can hold 300,000 tons of water! 🌧️</div>
+      </div>
+    </div>
+    <div class="wow-card" onclick="this.classList.toggle('open')">
+      <div class="wow-icon">❄️</div>
+      <div class="wow-body">
+        <div class="wow-title">No two snowflakes have ever been identical — proven by science</div>
+        <div class="wow-teaser">You've heard this before — but the reason WHY is mind-blowing.</div>
+        <div class="wow-hint">👆 Tap for the full story</div>
+        <div class="wow-secret">A snowflake's shape is determined by the exact path it takes through the atmosphere — the precise temperature and humidity at every single instant of its journey. Even tiny differences create different crystal shapes. Mathematicians have calculated the number of possible snowflake structures is so astronomically large (10 to the power of 158!) that duplicate snowflakes are essentially impossible. ❄️</div>
+      </div>
+    </div>
+    <div class="wow-card" onclick="this.classList.toggle('open')">
+      <div class="wow-icon">🌈</div>
+      <div class="wow-body">
+        <div class="wow-title">You can never reach the end of a rainbow — ever</div>
+        <div class="wow-teaser">It's not just a saying. There's a real scientific reason why.</div>
+        <div class="wow-hint">👆 Tap for the full story</div>
+        <div class="wow-secret">A rainbow is not an object — it's an optical effect that appears at a specific angle (42°) between your eyes, the sun, and raindrops. As you move toward where you think the rainbow is, the angle changes and the rainbow appears to move away. You're always at the center of your own rainbow's circle — and from an airplane, you can see a rainbow as a complete circle! 🌈</div>
+      </div>
+    </div>
+    <div class="wow-card" onclick="this.classList.toggle('open')">
+      <div class="wow-icon">🌡️</div>
+      <div class="wow-body">
+        <div class="wow-title">Venus is hotter than Mercury — despite being farther from the sun</div>
+        <div class="wow-teaser">The atmosphere makes all the difference — and it's a warning for Earth.</div>
+        <div class="wow-hint">👆 Tap for the full story</div>
+        <div class="wow-secret">Mercury has no atmosphere, so heat escapes. Venus has a thick atmosphere of CO2 that traps heat in a runaway greenhouse effect — surface temperatures reach 900°F, hot enough to melt lead! This is why scientists worry about too much CO2 in Earth's atmosphere. Earth's weather system naturally regulates temperature — but it needs balance. 🌍</div>
+      </div>
+    </div>
+    <div class="wow-card" onclick="this.classList.toggle('open')">
+      <div class="wow-icon">🌊</div>
+      <div class="wow-body">
+        <div class="wow-title">The ocean is the world's biggest weather machine</div>
+        <div class="wow-teaser">Ocean currents move more water than all Earth's rivers combined.</div>
+        <div class="wow-hint">👆 Tap for the full story</div>
+        <div class="wow-secret">The Gulf Stream — a powerful warm ocean current — carries more water than 300 Amazon Rivers! It flows from the Gulf of Mexico up the US East Coast and across to Europe, keeping places like England much warmer than they should be at that latitude. Without the Gulf Stream, London would have winters like northern Canada! Ocean currents are basically Earth's central heating system. 🌊</div>
+      </div>
+    </div>
+    <div class="wow-card" onclick="this.classList.toggle('open')">
+      <div class="wow-icon">☀️</div>
+      <div class="wow-body">
+        <div class="wow-title">The sun's energy powers every single weather event on Earth</div>
+        <div class="wow-teaser">Every storm, every breeze, every rain shower traces back to the sun.</div>
+        <div class="wow-hint">👆 Tap for the full story</div>
+        <div class="wow-secret">The sun sends 173,000 terawatts of energy to Earth — that's 10,000 times more than all of humanity uses. Only 0.023% of this energy drives all Earth's weather, ocean currents, and wind. The rest is reflected or absorbed as heat. A single hurricane releases heat energy equivalent to about 10,000 nuclear bombs per day — all powered by the sun through evaporation! ☀️</div>
+      </div>
+    </div>
+    <div class="wow-card" onclick="this.classList.toggle('open')">
+      <div class="wow-icon">🌀</div>
+      <div class="wow-body">
+        <div class="wow-title">Jupiter's Great Red Spot is a storm bigger than Earth — going for 350+ years</div>
+        <div class="wow-teaser">Our weather seems crazy — then you see what other planets deal with.</div>
+        <div class="wow-hint">👆 Tap for the full story</div>
+        <div class="wow-secret">Jupiter's Great Red Spot is a storm that's been raging continuously since at least 1665 — and it's 2–3 times wider than Earth! Saturn has a hexagonal storm at its north pole the size of two Earths. Neptune has winds up to 1,500 mph — the fastest in the solar system. Our weather is wild, but we got lucky with a relatively calm planet! 🌀</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================
+     SECTION: WORD BANK
+============================= -->
+<div id="sec-words" class="section">
+  <div class="sec-title">📖 Weather Word Bank</div>
+  <p style="font-size:.9rem;color:var(--muted);margin-bottom:18px;">Real words used by meteorologists — tap any to expand! 🔬</p>
+  <div id="glossary-list">
+    <div class="glos-item" onclick="this.classList.toggle('open')"><div class="glos-q">Meteorologist <span class="glos-arrow">▼</span></div><div class="glos-a">A scientist who studies the atmosphere and predicts weather. The word comes from the Greek "meteoron" meaning "thing in the sky." Meteorologists use radar, satellites, weather balloons, and supercomputers to forecast weather. The National Weather Service has offices all across the US — including one in Pleasant Hill, Missouri, right near Kansas City!</div></div>
+    <div class="glos-item" onclick="this.classList.toggle('open')"><div class="glos-q">Atmosphere <span class="glos-arrow">▼</span></div><div class="glos-a">The layer of gases surrounding Earth, held in place by gravity. It's about 300 miles thick, but 99% of it is within 20 miles of the surface. It has 5 layers: the troposphere (where all weather happens), stratosphere, mesosphere, thermosphere, and exosphere. The air we breathe is about 78% nitrogen, 21% oxygen, and 1% other gases including CO2 and water vapor.</div></div>
+    <div class="glos-item" onclick="this.classList.toggle('open')"><div class="glos-q">Front <span class="glos-arrow">▼</span></div><div class="glos-a">The boundary between two different air masses (large bodies of air with similar temperature and humidity). Cold fronts (cold air pushing into warm) bring stormy weather that clears quickly. Warm fronts (warm air sliding over cold) bring prolonged rain. Stationary fronts bring extended periods of the same weather. You'll see fronts on every weather map!</div></div>
+    <div class="glos-item" onclick="this.classList.toggle('open')"><div class="glos-q">Humidity <span class="glos-arrow">▼</span></div><div class="glos-a">The amount of water vapor in the air. Relative humidity is expressed as a percentage — 100% means the air is completely saturated and can't hold more water (which means fog or rain is likely). 50% means the air holds half its maximum possible moisture. High humidity makes hot days feel much worse because sweat can't evaporate efficiently to cool you down. Kansas City summers are famously humid!</div></div>
+    <div class="glos-item" onclick="this.classList.toggle('open')"><div class="glos-q">Dew Point <span class="glos-arrow">▼</span></div><div class="glos-a">The temperature at which air becomes saturated and water vapor starts condensing into liquid. A dew point above 60°F feels humid; above 70°F is oppressive; above 75°F is rare and extremely uncomfortable. Dew point is actually a better measure of "how sticky it feels" than relative humidity. Morning dew on grass forms because the ground cools overnight below the dew point!</div></div>
+    <div class="glos-item" onclick="this.classList.toggle('open')"><div class="glos-q">Isobar <span class="glos-arrow">▼</span></div><div class="glos-a">Lines on a weather map connecting areas of equal atmospheric pressure. Where isobars are close together, the pressure changes rapidly over a short distance — and that means strong winds! Where they're spaced far apart, winds are gentle. The circular pattern of isobars around low pressure systems is what creates the spinning of storms. Isobar literally means "equal weight" in Greek.</div></div>
+    <div class="glos-item" onclick="this.classList.toggle('open')"><div class="glos-q">Precipitation <span class="glos-arrow">▼</span></div><div class="glos-a">Any form of water — liquid or solid — that falls from clouds and reaches the ground. This includes rain, snow, sleet, hail, and freezing rain. It's measured in inches or millimeters — but for snow, you also measure depth. One inch of rain equals about 10 inches of fluffy snow (but much less for heavy, wet snow). Kansas City gets about 38 inches of precipitation per year total.</div></div>
+    <div class="glos-item" onclick="this.classList.toggle('open')"><div class="glos-q">El Niño / La Niña <span class="glos-arrow">▼</span></div><div class="glos-a">Natural climate patterns caused by changes in Pacific Ocean temperatures that affect weather worldwide for months or years. El Niño (warm Pacific) tends to bring wetter winters to the southern US and drier conditions to the north. La Niña (cool Pacific) often brings drier, warmer winters to the southern US and more active tornado seasons to the central US — including Kansas City! Scientists monitor these patterns constantly.</div></div>
+    <div class="glos-item" onclick="this.classList.toggle('open')"><div class="glos-q">Jet Stream <span class="glos-arrow">▼</span></div><div class="glos-a">A fast-moving river of air flowing west-to-east high in the atmosphere (6–9 miles up), reaching speeds of 100–250 mph. The jet stream steers weather systems across the US. When it dips south, it brings cold Arctic air to Kansas City; when it stays north, we get warmer weather. Pilots flying east use the jet stream to save fuel and time — it can cut transatlantic flight times by an hour!</div></div>
+    <div class="glos-item" onclick="this.classList.toggle('open')"><div class="glos-q">Anemometer <span class="glos-arrow">▼</span></div><div class="glos-a">An instrument used to measure wind speed. The most common type has three or four cups that spin in the wind — the faster the wind, the faster the cups spin, and a sensor counts the rotations. Wind speed is measured in miles per hour (mph), kilometers per hour (km/h), or knots (nautical miles per hour). Can you say "anemometer" five times fast? 💨</div></div>
+  </div>
+</div>
+
+<!-- ============================
+     SECTION: SAFETY
+============================= -->
+<div id="sec-safety" class="section">
+  <div class="sec-title">🏠 Weather Safety</div>
+  <div class="card">
+    <div class="card-title">⚠️ Watch vs. Warning — Know the Difference!</div>
+    <div class="safety-grid" style="margin-top:10px;">
+      <div class="sw-box sw-watch">
+        <span class="sw-emoji">👀</span>
+        <h3>WATCH</h3>
+        <p>Conditions are <em>right</em> for dangerous weather to develop. Stay alert, know your shelter, monitor the news. No action yet — but be ready!</p>
+      </div>
+      <div class="sw-box sw-warning">
+        <span class="sw-emoji">🚨</span>
+        <h3>WARNING</h3>
+        <p>Dangerous weather has been <em>seen</em> or confirmed. Take shelter or action <strong>RIGHT NOW.</strong> Don't wait. Every second matters!</p>
+      </div>
+    </div>
+  </div>
+  <div class="safety-block safety-do">
+    <div class="safety-hdr">✅ Thunderstorm Safety</div>
+    <ul class="safety-list">
+      <li>🏠 Get inside a sturdy building or hard-topped car — NOT a convertible or shed</li>
+      <li>📵 Avoid using corded phones, computers plugged in, or plumbing during a storm</li>
+      <li>🌳 Stay away from tall trees, hilltops, open fields, and water</li>
+      <li>⚡ If outdoors and lightning is close: crouch low, feet together, cover ears, minimize contact with ground</li>
+      <li>⏱️ Wait 30 minutes after the last thunder before going back outside</li>
+    </ul>
+  </div>
+  <div class="safety-block safety-do">
+    <div class="safety-hdr">❄️ Winter Storm Safety</div>
+    <ul class="safety-list">
+      <li>🧥 Dress in layers — wool and synthetic fabrics, not cotton (cotton loses warmth when wet)</li>
+      <li>🚗 Keep a winter kit in your car: blanket, boots, water, snacks, flashlight</li>
+      <li>🏠 Stay inside during a blizzard — getting lost or stuck in a blizzard is life-threatening</li>
+      <li>🧤 Watch for frostbite (white/grey skin) and hypothermia (uncontrollable shivering)</li>
+      <li>🔋 Have a battery-powered or hand-crank radio ready for news and alerts</li>
+    </ul>
+  </div>
+  <div class="safety-block safety-do">
+    <div class="safety-hdr">🌡️ Extreme Heat Safety</div>
+    <ul class="safety-list">
+      <li>💧 Drink water constantly — don't wait until you're thirsty! Aim for 8+ glasses on hot days</li>
+      <li>🏠 Stay in air-conditioned places during the hottest part of the day (noon–4 PM)</li>
+      <li>🐕 Never leave pets or people in a car — car temperatures can reach 140°F in minutes!</li>
+      <li>👕 Wear light-colored, loose-fitting clothing and a hat</li>
+      <li>🤒 Know signs of heat stroke: hot dry skin, confusion, no sweating — call 911 immediately</li>
+    </ul>
+  </div>
+  <div class="safety-block safety-dont">
+    <div class="safety-hdr">❌ Never Do These Things</div>
+    <ul class="safety-list">
+      <li>❌ Touch a downed power line — ever, no matter what</li>
+      <li>❌ Drive through flooded roads — just 6 inches of water can knock a person down, 2 feet floats a car</li>
+      <li>❌ Use a gas generator indoors — carbon monoxide is odorless and deadly</li>
+      <li>❌ Stand under a tree during a lightning storm</li>
+      <li>❌ Ignore weather alerts — they exist to save your life!</li>
+    </ul>
+  </div>
+  <div class="card">
+    <div class="card-title">🎒 Every Kansas City Family's Emergency Kit</div>
+    <p><strong class="hl">Water</strong> (1 gallon/person/day, 3-day supply) · <strong class="hl">Non-perishable food</strong> · <strong class="hl">Battery or hand-crank radio</strong> · <strong class="hl">Flashlight + extra batteries</strong> · <strong class="hl">First aid kit</strong> · <strong class="hl">Whistle</strong> · <strong class="hl">Dust masks</strong> · <strong class="hl">Plastic sheeting + duct tape</strong> · <strong class="hl">Moist towelettes</strong> · <strong class="hl">Wrench to shut off utilities</strong> · <strong class="hl">Can opener</strong> · <strong class="hl">Local maps</strong> · <strong class="hl">Phone charger/power bank</strong> · <strong class="hl">Pet food + supplies</strong></p>
+  </div>
+</div>
+
+</div><!-- /content -->
+
+<script>
+// ── STARS
+(function(){
+  const s = document.getElementById('stars');
+  for(let i=0;i<80;i++){
+    const d = document.createElement('div');
+    d.className='star';
+    const sz = Math.random()*2+1;
+    d.style.cssText=`width:${sz}px;height:${sz}px;left:${Math.random()*100}%;top:${Math.random()*100}%;animation-duration:${Math.random()*4+2}s;animation-delay:${Math.random()*4}s;`;
+    s.appendChild(d);
+  }
+})();
+
+// ── RAIN
+(function(){
+  const r = document.getElementById('rain');
+  for(let i=0;i<50;i++){
+    const d = document.createElement('div');
+    d.className='rdrop';
+    d.style.cssText=`left:${Math.random()*100}vw;height:${Math.random()*18+10}px;animation-duration:${Math.random()*.8+.5}s;animation-delay:${Math.random()*2}s;opacity:${Math.random()*.3+.08};`;
+    r.appendChild(d);
+  }
+})();
+
+// ── TAB SWITCHER
+function showTab(id, btn){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('sec-'+id).classList.add('active');
+  btn.classList.add('active');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// ── WEATHER MIXER
+const WEATHERS = [
+  {id:'sun',icon:'☀️',name:'Sun'},
+  {id:'rain',icon:'🌧️',name:'Rain'},
+  {id:'snow',icon:'❄️',name:'Snow'},
+  {id:'wind',icon:'💨',name:'Wind'},
+  {id:'cold',icon:'🥶',name:'Cold'},
+  {id:'thunder',icon:'⚡',name:'Thunder'},
+  {id:'clouds',icon:'☁️',name:'Clouds'},
+  {id:'fog',icon:'🌫️',name:'Fog'},
+  {id:'heat',icon:'🔥',name:'Heat'},
+  {id:'ice',icon:'🧊',name:'Ice'},
+  {id:'hail',icon:'🌨️',name:'Hail'},
+  {id:'humid',icon:'💧',name:'Humidity'},
+];
+
+const MIXES = {
+  'rain+ice': {icon:'🌨️',name:'Sleet',desc:'When rain falls through a layer of freezing air and refreezes into ice pellets before hitting the ground — that\'s sleet! It makes a tapping sound on windows and makes roads very slippery.'},
+  'rain+cold': {icon:'🧊',name:'Freezing Rain',desc:'Rain that stays liquid until it hits a frozen surface and then freezes on contact — creating a layer of ice. It\'s the most dangerous winter precipitation because it coats roads in invisible "black ice"!'},
+  'rain+thunder': {icon:'⛈️',name:'Thunderstorm',desc:'Heavy rain combined with lightning and thunder! Thunderstorms need moisture, warm rising air, and wind shear. They can produce lightning, hail, strong winds, and even tornadoes!'},
+  'snow+thunder': {icon:'🌩️',name:'Thundersnow!',desc:'Yes, this is a real thing! A thunderstorm that produces snow instead of rain — and it\'s surprisingly rare. Meteorologist Jim Cantore famously gets very excited whenever thundersnow happens. The lightning and thunder still occur, but snowflakes fall instead of raindrops.'},
+  'wind+snow': {icon:'🌁',name:'Blizzard',desc:'Strong winds (35+ mph) + heavy snow + low visibility = blizzard! The wind drives snow sideways, creating whiteout conditions and dangerous wind chills. Even after snow stops, blowing snow can maintain blizzard conditions.'},
+  'wind+cold': {icon:'🌬️',name:'Wind Chill',desc:'Wind doesn\'t actually lower the temperature — but it makes your body lose heat much faster! At 20°F with 30 mph wind, it feels like -2°F. The stronger the wind and the colder the air, the more dangerous the wind chill!'},
+  'sun+rain': {icon:'🌈',name:'Rainbow!',desc:'When sunlight shines through raindrops, each drop acts like a tiny prism, splitting white light into all its colors. You always see a rainbow opposite the sun. Double rainbows happen when light bounces twice inside the raindrop — with reversed colors!'},
+  'heat+humid': {icon:'🥵',name:'Heat Index',desc:'The "feels like" temperature when heat and humidity combine! At 95°F with 80% humidity, it can feel like 133°F! High humidity prevents your sweat from evaporating, which is your body\'s main cooling system. This is why Kansas City summers feel so brutal.'},
+  'clouds+fog': {icon:'🌁',name:'Dense Fog',desc:'When clouds descend to ground level, you walk right through them! Fog is essentially a cloud at ground level. Dense fog can reduce visibility to near zero and is measured by how far you can see. Radiation fog forms on calm, clear nights when the ground cools rapidly.'},
+  'thunder+hail': {icon:'⛈️',name:'Severe Thunderstorm',desc:'Large hail is a sign of a very powerful thunderstorm with strong updrafts. Hailstones form when ice pellets are carried up and down inside the storm repeatedly, gaining layers of ice each trip — like a jawbreaker. This storm is officially "severe"!'},
+  'cold+fog': {icon:'🌫️',name:'Freezing Fog',desc:'When fog forms in temperatures below 32°F, the tiny water droplets in the fog can be "supercooled" — liquid below freezing! When they touch a surface like a tree or power line, they freeze on contact, creating beautiful but dangerous ice crystals called rime ice.'},
+  'sun+wind': {icon:'🌤️',name:'Breezy Day',desc:'A sunny day with a good breeze is perfect weather! The wind is caused by pressure differences — air flows from high to low pressure areas. Light breezes (under 15 mph) are great for kite flying. In Kansas City, prevailing winds usually come from the south or southwest.'},
+  'rain+wind': {icon:'🌀',name:'Squall',desc:'A sudden, sharp burst of strong wind and rain — usually the leading edge of a storm system. Squalls can reach 50+ mph winds and are dangerous for boaters, pilots, and outdoor activities. They often arrive very quickly with little warning!'},
+  'heat+sun': {icon:'☀️',name:'Heat Wave',desc:'Prolonged extreme heat! A heat wave is when temperatures stay significantly above normal for 3+ days. Heat waves kill more Americans every year than any other weather event — more than tornadoes, hurricanes, or floods! The heat index (with humidity) makes them even more dangerous.'},
+  'snow+ice': {icon:'⛸️',name:'Ice Storm',desc:'When snow is topped by freezing rain or sleet, creating layers of snow under ice. Trees and power lines collapse under the weight — ice is extremely heavy! Ice storms are beautiful but incredibly destructive. A 1-inch coating of ice on a tree adds 500+ pounds of weight to its branches.'},
+  'clouds+rain': {icon:'🌦️',name:'Drizzle',desc:'Light, misty rain with very tiny droplets that seem to hang in the air rather than fall. Drizzle forms in low, shallow clouds and typically brings grey, gloomy skies. Unlike regular rain, you might barely notice you\'re getting wet — until you\'re soaked!'},
+  'fog+sun': {icon:'🌤️',name:'Burn-off',desc:'When morning fog clears as the sun heats the ground — called "fog burn-off!" The sun warms the air near the surface faster than the fog can maintain itself, and it evaporates. Kansas City often has gorgeous spring mornings that start foggy and clear into perfect days!'},
+  'thunder+wind': {icon:'🌪️',name:'Damaging Winds',desc:'Severe thunderstorms can produce straight-line winds of 70–100+ mph — as dangerous as a weak tornado! These are called "downbursts" or "microbursts" — air that crashes down from the storm and fans outward. Unlike tornadoes, the damage path is wide and straight rather than narrow and curving.'},
+};
+
+let slot1Sel = null, slot2Sel = null, activeSlot = 1;
+let foundCombos = new Set();
+
+function buildMixerPalette(){
+  const pal = document.getElementById('mixer-palette');
+  pal.innerHTML = '';
+  WEATHERS.forEach(w => {
+    const chip = document.createElement('div');
+    chip.className = 'wx-chip';
+    chip.innerHTML = `<span>${w.icon}</span>${w.name}`;
+    chip.dataset.id = w.id;
+    chip.dataset.icon = w.icon;
+    chip.dataset.name = w.name;
+    chip.onclick = () => selectWeather(w, chip);
+    pal.appendChild(chip);
+  });
+  document.getElementById('total-count').textContent = Object.keys(MIXES).length;
+}
+
+function activateSlot(n){
+  activeSlot = n;
+  document.getElementById('active-slot-label').textContent = 'Weather #' + n;
+}
+
+function selectWeather(w, chip){
+  // clear old selection class for this slot
+  document.querySelectorAll('.wx-chip').forEach(c => {
+    if(activeSlot === 1) c.classList.remove('selected-1');
+    else c.classList.remove('selected-2');
+  });
+  chip.classList.add(activeSlot === 1 ? 'selected-1' : 'selected-2');
+
+  if(activeSlot === 1){
+    slot1Sel = w;
+    document.getElementById('slot1-icon').textContent = w.icon;
+    document.getElementById('slot1-label').textContent = w.name;
+    document.getElementById('slot1').classList.add('has-item');
+    activeSlot = 2;
+    document.getElementById('active-slot-label').textContent = 'Weather #2';
+  } else {
+    slot2Sel = w;
+    document.getElementById('slot2-icon').textContent = w.icon;
+    document.getElementById('slot2-label').textContent = w.name;
+    document.getElementById('slot2').classList.add('has-item');
+    activeSlot = 1;
+    document.getElementById('active-slot-label').textContent = 'Weather #1';
+  }
+}
+
+function doMix(){
+  if(!slot1Sel || !slot2Sel){
+    document.getElementById('mix-desc').textContent = 'Pick two weather types first! Tap the weather chips above to select them.';
+    return;
+  }
+  if(slot1Sel.id === slot2Sel.id){
+    document.getElementById('mix-r-icon').textContent = '😅';
+    document.getElementById('mix-r-icon').style.fontSize = '2.4rem';
+    document.getElementById('mix-r-name').style.display = 'none';
+    document.getElementById('mix-desc').textContent = 'Try two DIFFERENT weather types for a more interesting result!';
+    return;
+  }
+  const key1 = slot1Sel.id + '+' + slot2Sel.id;
+  const key2 = slot2Sel.id + '+' + slot1Sel.id;
+  const result = MIXES[key1] || MIXES[key2];
+  const rBox = document.getElementById('mix-result-box');
+  const rIcon = document.getElementById('mix-r-icon');
+  const rName = document.getElementById('mix-r-name');
+  const rDesc = document.getElementById('mix-desc');
+  if(result){
+    rIcon.textContent = result.icon;
+    rIcon.style.fontSize = '2.4rem';
+    rName.textContent = result.name;
+    rName.style.display = 'block';
+    rDesc.textContent = '🔬 ' + result.desc;
+    foundCombos.add(key1);
+    document.getElementById('found-count').textContent = foundCombos.size;
+    rBox.style.animation = 'none';
+    setTimeout(()=>{ rBox.style.animation=''; }, 10);
+  } else {
+    rIcon.textContent = '🤔';
+    rName.style.display = 'none';
+    rDesc.textContent = `Hmm, ${slot1Sel.name} + ${slot2Sel.name} doesn't create a named weather type — but in real life, weather combinations are always interesting! Try a different pair. There are ${Object.keys(MIXES).length} combinations to find!`;
+  }
+}
+
+buildMixerPalette();
+
+// ── TEMP CONVERTER
+function convFromF(){
+  const f = parseFloat(document.getElementById('fahr').value);
+  if(isNaN(f)) return;
+  const c = (f - 32) * 5/9;
+  document.getElementById('cels').value = Math.round(c*10)/10;
+  updateConvUI(f);
+}
+function convFromC(){
+  const c = parseFloat(document.getElementById('cels').value);
+  if(isNaN(c)) return;
+  const f = c * 9/5 + 32;
+  document.getElementById('fahr').value = Math.round(f*10)/10;
+  updateConvUI(f);
+}
+function updateConvUI(f){
+  // pointer: map -40 to 212 → 0% to 100%
+  const pct = Math.min(100, Math.max(0, (f - (-40)) / (212 - (-40)) * 100));
+  document.getElementById('conv-pointer').style.left = pct + '%';
+  const fun = document.getElementById('conv-fun');
+  if(f <= 0) fun.textContent = '🥶 That\'s dangerously cold — bundle up!';
+  else if(f <= 32) fun.textContent = '❄️ Below freezing — water turns to ice!';
+  else if(f <= 50) fun.textContent = '🧥 Chilly! Time for a jacket.';
+  else if(f <= 65) fun.textContent = '😊 Cool and comfortable — great outdoor weather!';
+  else if(f <= 75) fun.textContent = '🌤️ Perfect temperature — enjoy it!';
+  else if(f <= 85) fun.textContent = '☀️ Warm summer day — don\'t forget sunscreen!';
+  else if(f <= 95) fun.textContent = '🥵 Hot! Drink lots of water and find some shade.';
+  else if(f <= 110) fun.textContent = '🔥 Dangerously hot — stay indoors if possible!';
+  else if(f <= 212) fun.textContent = '♨️ Extremely hot — water boils at 212°F / 100°C!';
+  else fun.textContent = '🌋 That\'s hotter than boiling water! Yikes!';
+}
+updateConvUI(72);
+
+// ── PAINTER
+const STAMPS = [
+  {e:'☀️',n:'Sun'},{e:'🌤️',n:'Partly Cloudy'},{e:'⛅',n:'Cloudy'},{e:'☁️',n:'Cloud'},
+  {e:'🌧️',n:'Rain'},{e:'⛈️',n:'Thunderstorm'},{e:'🌩️',n:'Lightning'},{e:'⚡',n:'Bolt'},
+  {e:'❄️',n:'Snowflake'},{e:'🌨️',n:'Snowing'},{e:'🌫️',n:'Fog'},{e:'🌈',n:'Rainbow'},
+  {e:'🌪️',n:'Tornado'},{e:'🌀',n:'Cyclone'},{e:'💨',n:'Wind'},{e:'🌊',n:'Wave'},
+  {e:'🌙',n:'Moon'},{e:'⭐',n:'Star'},{e:'🌟',n:'Sparkle'},{e:'🌱',n:'Sprout'},
+  {e:'🌲',n:'Tree'},{e:'🏔️',n:'Mountain'},{e:'🏠',n:'House'},{e:'✈️',n:'Plane'},
+  {e:'🦅',n:'Eagle'},{e:'🌺',n:'Flower'},{e:'🍁',n:'Leaf'},{e:'🌵',n:'Cactus'},
+];
+
+let currentStamp = '☀️';
+let currentSize = 2;
+const sizes = [1.4, 2, 2.8, 3.8];
+
+function buildStampPicker(){
+  const picker = document.getElementById('stamp-picker');
+  STAMPS.forEach(s => {
+    const btn = document.createElement('button');
+    btn.className = 'stamp-btn' + (s.e === currentStamp ? ' active' : '');
+    btn.title = s.n;
+    btn.textContent = s.e;
+    btn.onclick = () => {
+      currentStamp = s.e;
+      document.querySelectorAll('.stamp-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    };
+    picker.appendChild(btn);
+  });
+}
+
+function setSize(n, btn){
+  currentSize = n;
+  document.querySelectorAll('.sz-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+function clearCanvas(){
+  const canvas = document.getElementById('paint-canvas');
+  canvas.querySelectorAll('.paint-stamp').forEach(s => s.remove());
+}
+
+function addStamp(x, y){
+  const canvas = document.getElementById('paint-canvas');
+  const rect = canvas.getBoundingClientRect();
+  const px = x - rect.left;
+  const py = y - rect.top;
+  const span = document.createElement('span');
+  span.className = 'paint-stamp';
+  span.textContent = currentStamp;
+  span.style.left = px + 'px';
+  span.style.top = py + 'px';
+  span.style.fontSize = sizes[currentSize - 1] + 'rem';
+  canvas.appendChild(span);
+}
+
+buildStampPicker();
+
+document.addEventListener('DOMContentLoaded', () => {
+  const canvas = document.getElementById('paint-canvas');
+  let painting = false;
+  let lastStamp = 0;
+
+  canvas.addEventListener('mousedown', e => {
+    painting = true;
+    addStamp(e.clientX, e.clientY);
+  });
+  canvas.addEventListener('mousemove', e => {
+    if(!painting) return;
+    const now = Date.now();
+    if(now - lastStamp < 80) return;
+    lastStamp = now;
+    addStamp(e.clientX, e.clientY);
+  });
+  canvas.addEventListener('mouseup', () => painting = false);
+  canvas.addEventListener('mouseleave', () => painting = false);
+
+  canvas.addEventListener('touchstart', e => {
+    e.preventDefault();
+    painting = true;
+    const t = e.touches[0];
+    addStamp(t.clientX, t.clientY);
+  }, {passive:false});
+  canvas.addEventListener('touchmove', e => {
+    e.preventDefault();
+    if(!painting) return;
+    const now = Date.now();
+    if(now - lastStamp < 100) return;
+    lastStamp = now;
+    const t = e.touches[0];
+    addStamp(t.clientX, t.clientY);
+  }, {passive:false});
+  canvas.addEventListener('touchend', () => painting = false);
+});
+</script>
+</body>
+</html>
