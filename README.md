@@ -79,7 +79,7 @@ No installation. No build step. No server required.
 
 ```bash
 # Or clone the whole repo
-git clone https://github.com/your-username/rowans-weather-hq.git
+git clone https://github.com/OfTh3Sea/WeatherHQ.git
 cd rowans-weather-hq
 open rowan-weather-hq.html
 ```
